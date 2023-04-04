@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Socket.io Chat App</title>
+  </head>
+  <body>
+    <h1>Socket.io Chat App</h1>
+    <div>
+      <input id="toInput" placeholder="Recipient">
+      <input id="messageInput" placeholder="Message">
+      <button id="sendButton">Send</button>
+      <button id="privateButton">Send Private</button>
+    </div>
+    <div id="messageArea"></div>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+      const token = localStorage.getItem('token');
+      const socket = io.connect('http://localhost:3000', {
+        auth: { token },
+      });
+
+      socket.on('connect_error', (err) => {
+        console.log(`Connection error: ${err.message}`);
+      });
+
+      socket.on('chat', (message) => {
+        console.log(`Received message privately from user ${message.from}: ${message.text}`);
+        const messageArea = document.getElementById('messageArea');
+        messageArea.innerHTML += `<p>${message.from}: ${message.text}</p>`;
+      });
+
+      socket.on('privateChat', (message) => {
+        console.log(`Received private message from user ${message.from}: ${message.text}`);
+        const messageArea = document.getElementById('messageArea');
+        messageArea.innerHTML += `<p>[Private] ${message.from}: ${message.text}</p>`;
+      });
+
+      socket.emit('join', 'room1');
+
+      document.getElementById('sendButton').addEventListener('click', () => {
+        const messageInput = document.getElementById('messageInput');
+        const message = messageInput.value;
+        socket.emit('chat', { text: message });
+        messageInput.value = '';
+      });
+
+      document.getElementById('privateButton').addEventListener('click', () => {
+        const toInput = document.getElementById('toInput');
+        const messageInput = document.getElementById('messageInput');
+        const to = toInput.value;
+        const message = messageInput.value;
+        socket.emit('privateChat', { to, text: message });
+        messageInput.value = '';
+      });
+    </script>
+  </body>
+</html>
