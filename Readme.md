@@ -34,7 +34,7 @@ The following web pages are available:
 * `/`: the login page
 * `/chat-page`: the chat page
 
-To access the chat page, you must first log in with a valid username and password.
+To access the chat page, you must first log in with a valid email and password.
 
 ### Socket.IO
 
