@@ -7,7 +7,7 @@
   <body>
     <h1>Socket.io Chat App</h1>
     <div>
-      <input id="toInput" placeholder="Recipient">
+      <input id="toInput" placeholder="Recipient ID">
       <input id="messageInput" placeholder="Message">
       <button id="sendButton">Send</button>
       <button id="privateButton">Send Private</button>
@@ -25,18 +25,18 @@
       });
 
       socket.on('chat', (message) => {
-        console.log(`Received message privately from user ${message.from}: ${message.text}`);
+        console.log(`Received message from user ${message.from}: ${message.text}`);
         const messageArea = document.getElementById('messageArea');
         messageArea.innerHTML += `<p>${message.from}: ${message.text}</p>`;
       });
 
       socket.on('privateChat', (message) => {
-        console.log(`Received private message from user ${message.from}: ${message.text}`);
         const messageArea = document.getElementById('messageArea');
         messageArea.innerHTML += `<p>[Private] ${message.from}: ${message.text}</p>`;
+        console.log(`Received private message from user ${message.from}: ${message.text}`);
       });
 
-      socket.emit('join', 'room1');
+      // socket.emit('join', 'room1');
 
       document.getElementById('sendButton').addEventListener('click', () => {
         const messageInput = document.getElementById('messageInput');

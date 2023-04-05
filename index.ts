@@ -8,7 +8,7 @@ import cors from 'cors';
 import path from 'path';
 const jwt = require('jsonwebtoken');
 const jwtSecret = process.env.JWT_SECRET_KEY;
-
+import User from './src/models/userModels';
 const app = express();
 app.use(cors());
 const server = http.createServer(app);
@@ -16,7 +16,7 @@ const io = new Server(server);
 
 
 // Middleware for authentication
-const authMiddleware = (socket: any, next: any) => {
+const authMiddleware = async (socket: Socket, next: any) => {
   const token = socket.handshake.auth.token;
   if (!token) {
     return next(new Error('Authentication error'));
@@ -24,7 +24,11 @@ const authMiddleware = (socket: any, next: any) => {
 
   try {
     const decoded: any = jwt.verify(token, jwtSecret);
-    socket.userId = decoded.id;
+    // @ts-ignore
+    socket.handshake.userId = decoded.userId;
+    const recipient = await User.findById(decoded.userId);
+    // @ts-ignore
+    socket.handshake.recipientId = recipient._id;
     next();
   } catch (err) {
     return next(new Error('Authentication error'));
@@ -33,11 +37,13 @@ const authMiddleware = (socket: any, next: any) => {
 
 io.use(authMiddleware);
 
-io.on('connection', (socket: any) => {
-  console.log(`User ${socket.userId} connected`);
+io.on('connection', (socket: Socket) => {
+  // @ts-ignore
+  console.log(`User ${socket.handshake.userId} connected`);
 
   socket.on('disconnect', () => {
-    console.log(`User ${socket.userId} disconnected`);
+    // @ts-ignore
+    console.log(`User ${socket.handshake.userId} disconnected`);
   });
 
   socket.on('join', (room: string) => {
@@ -46,20 +52,36 @@ io.on('connection', (socket: any) => {
 
   socket.on('chat', (data: any) => {
     const message = {
-      from: socket.id,
+      // @ts-ignore
+      from: socket.handshake.userId,
       text: data.text,
     };
-      io.emit('chat', message);
-    
+    io.emit('chat', message);
   });
-  socket.on('privateChat', (data: any) => {
+
+  socket.on('privateChat', async (data: any) => {
     const message = {
-      from: socket.id,
+      // @ts-ignore
+      from: socket.handshake.userId,
       text: data.text,
     };
-    io.to(data.to).emit('privateChat', message);
+    const to = data.to;
+    if (to) {
+      const recipient = await User.findById(to);
+      if (!recipient) {
+        return socket.emit('errorMessage', 'User not found');
+      }
+
+      socket.emit('join', to);
+      // @ts-ignore
+      io.to(recipient._id).emit('privateChat', message);
+    } else {
+      socket.emit('error', 'Invalid recipient');
+    }
   });
 });
+
+
 app.get('/chat-page', (req, res) => {
   res.sendFile(path.join(__dirname, 'public/chat.html'));
 });
