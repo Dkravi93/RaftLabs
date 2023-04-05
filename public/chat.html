@@ -6,12 +6,14 @@
   </head>
   <body>
     <h1>Socket.io Chat App</h1>
-    <div>
-      <input id="toInput" placeholder="Recipient ID">
-      <input id="messageInput" placeholder="Message">
-      <button id="sendButton">Send</button>
-      <button id="privateButton">Send Private</button>
-    </div>
+    <form id="form">
+      <div>
+        <input id="toInput" placeholder="Recipient ID">
+        <input id="messageInput" placeholder="Message">
+        <button id="sendButton" type="submit">Send</button>
+        <button id="privateButton" type="submit">Send Private</button>
+      </div>
+    </form>
     <div id="messageArea"></div>
     <script src="/socket.io/socket.io.js"></script>
     <script>
@@ -24,34 +26,37 @@
         console.log(`Connection error: ${err.message}`);
       });
 
-      socket.on('chat', (message) => {
+      socket.on('send-message', (message) => {
         console.log(`Received message from user ${message.from}: ${message.text}`);
         const messageArea = document.getElementById('messageArea');
         messageArea.innerHTML += `<p>${message.from}: ${message.text}</p>`;
       });
 
-      socket.on('privateChat', (message) => {
-        const messageArea = document.getElementById('messageArea');
-        messageArea.innerHTML += `<p>[Private] ${message.from}: ${message.text}</p>`;
-        console.log(`Received private message from user ${message.from}: ${message.text}`);
-      });
-
       // socket.emit('join', 'room1');
 
-      document.getElementById('sendButton').addEventListener('click', () => {
-        const messageInput = document.getElementById('messageInput');
-        const message = messageInput.value;
-        socket.emit('chat', { text: message });
-        messageInput.value = '';
-      });
+      const form = document.getElementById('form');
+      form.addEventListener('submit', (event) => {
+        event.preventDefault();
 
-      document.getElementById('privateButton').addEventListener('click', () => {
-        const toInput = document.getElementById('toInput');
         const messageInput = document.getElementById('messageInput');
-        const to = toInput.value;
         const message = messageInput.value;
-        socket.emit('privateChat', { to, text: message });
+
+        const toInput = document.getElementById('toInput');
+        const to = toInput.value;
+        if(message === "") return;
+        socket.emit('chat', { text: message }, to);
+          messageArea.innerHTML += `<p>${JSON.parse(localStorage.getItem("user"))._id} : ${message}</p>`;
+
+        // if (event.target === document.getElementById('sendButton')) {
+        //   console.log("FDGZDFHGDF");
+        //   socket.emit('chat', { text: message }, "");
+        //   messageArea.innerHTML += `<p>${JSON.parse(localStorage.getItem("user"))._id}: ${message}</p>`;
+        // } else if (event.target === document.getElementById('privateButton')) {
+
+        // }
+
         messageInput.value = '';
+        toInput.value = '';
       });
     </script>
   </body>
