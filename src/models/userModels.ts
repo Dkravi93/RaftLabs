@@ -4,6 +4,7 @@ export interface User extends Document {
   name: string;
   email: string;
   password: string;
+  socketId?: string;
 }
 
 const UserSchema = new Schema<User>(
@@ -21,6 +22,7 @@ const UserSchema = new Schema<User>(
       type: String,
       required: true,
     },
+    socketId: { type: String },
   },
   { timestamps: true }
 );
