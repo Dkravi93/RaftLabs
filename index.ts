@@ -24,16 +24,29 @@ const authMiddleware = async (socket: Socket, next: any) => {
 
   try {
     const decoded: any = jwt.verify(token, jwtSecret);
+    if (!decoded || !decoded.userId) {
+      throw new Error('Invalid token');
+    }
+    
+    if (decoded.userId === '') {
+      throw new Error('Invalid userId');
+    }
     // @ts-ignore
     socket.handshake.userId = decoded.userId;
-    const recipient = await User.findById(decoded.userId);
+    const filter = { _id: decoded.userId };
+    const update = { socketId: socket.id };
+    const options = { new: true };
+    const recipient = await User.findOneAndUpdate(filter, update, options);
+    console.log("TTTTTTTT", recipient);
+    
     // @ts-ignore
-    socket.handshake.recipientId = recipient._id;
+    socket.handshake.userId = recipient._id;
     next();
   } catch (err) {
     return next(new Error('Authentication error'));
   }
 };
+
 
 io.use(authMiddleware);
 
@@ -50,35 +63,32 @@ io.on('connection', (socket: Socket) => {
     socket.join(room);
   });
 
-  socket.on('chat', (data: any) => {
-    const message = {
-      // @ts-ignore
-      from: socket.handshake.userId,
-      text: data.text,
-    };
-    io.emit('chat', message);
-  });
+  socket.on('chat', async (data: any, room: any) => {
+    try {
+      const message = {
+        // @ts-ignore
+        from: socket.handshake.userId,
+        text: data.text,
+      };
 
-  socket.on('privateChat', async (data: any) => {
-    const message = {
-      // @ts-ignore
-      from: socket.handshake.userId,
-      text: data.text,
-    };
-    const to = data.to;
-    if (to) {
-      const recipient = await User.findById(to);
-      if (!recipient) {
-        return socket.emit('errorMessage', 'User not found');
+      if (room === "") {
+        // Broadcast message to all clients
+        socket.broadcast.emit('send-message', message);
+      } else {
+        const recipient = await User.findById(room);
+        if (!recipient) {
+          throw new Error('Recipient not found');
+        }
+        // Send message to specific client
+        // @ts-ignore
+        socket.to(recipient.socketId).emit('send-message', message);
       }
-
-      socket.emit('join', to);
-      // @ts-ignore
-      io.to(recipient._id).emit('privateChat', message);
-    } else {
-      socket.emit('error', 'Invalid recipient');
+    } catch (err) {
+      console.error(err);
+      throw err; // Rethrow the error
     }
   });
+
 });
 
 
