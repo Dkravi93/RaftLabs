@@ -55,10 +55,6 @@ Please make sure to update tests as appropriate.
 This is a jwt secret key and mongodb uri.
 
 
-JWT_SECRET_KEY = "Hello World!"
-
-DB_MONGO_URI = "mongodb+srv://dpakravi93:helloworld@cluster0.jfqoot9.mongodb.net/?retryWrites=true&w=majority"
-
 ## License
 
 [MIT](https://choosealicense.com/licenses/mit/)
